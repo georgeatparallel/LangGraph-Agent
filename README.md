@@ -33,7 +33,7 @@ This project combines **LangChain**, **LangGraph**, and **Groq** to build a tool
 | Language | Python 3.10+ |
 | Agent Framework | LangChain + LangGraph |
 | LLM Provider | Groq API (`llama-3.1-8b-instant`) |
-| Web Search | DuckDuckGo (`duckduckgo-search`) |
+| Web Search | DuckDuckGo (`ddgs`), or opt-in Parallel Search MCP |
 | PDF Parsing | PyMuPDF (`pymupdf`) |
 | Config | Python Dotenv |
 
@@ -100,6 +100,42 @@ Command reference:
 On exit, a session summary is printed with total LLM calls, input/output tokens, and estimated USD cost.
 
 Conversation memory is persisted in `chat_history.json` at the project root.
+
+### Optional: Parallel web search
+
+To use [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp)
+for current information with source URLs and excerpts, install the optional dependencies:
+
+```bash
+pip install -r requirements-parallel.txt
+```
+
+Add this setting to your existing `.env` file, alongside `GROQ_API_KEY`:
+
+```env
+WEB_SEARCH_PROVIDER=parallel
+```
+
+Then run `python main.py` as usual and try: `Search the web for recent LangGraph releases and include source URLs.`
+The existing `web_search` tool uses Parallel's Streamable HTTP MCP endpoint at
+`https://search.parallel.ai/mcp`. Anonymous search is free for light use, uses Fast
+mode, and needs no Parallel account or API key. The Groq key is still required to
+run the conversational agent. This option adds web search only.
+
+Leave `WEB_SEARCH_PROVIDER` unset, or set it to `duckduckgo`, to use the existing
+DuckDuckGo search. PDF reading and conversation history work the same way with
+either provider. Only `duckduckgo` and `parallel` are accepted provider values.
+
+To check the search tool without calling the LLM:
+
+```bash
+python -c "from parallel_search import parallel_web_search; print(parallel_web_search.invoke({'query': 'LangGraph latest release'}))"
+```
+
+Search failures, including service limits, are returned as `Search failed: ...`
+tool results. Parallel requests have a 30-second timeout. If the service reports
+a rate limit, wait as directed before retrying. If Python cannot import `mcp`,
+install `requirements-parallel.txt` in the same environment used to run the agent.
 
 ---
 

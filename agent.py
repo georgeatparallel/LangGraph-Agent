@@ -10,6 +10,15 @@ from logger import AgentLogger
 load_dotenv()
 
 def build_agent():
+    provider = os.getenv('WEB_SEARCH_PROVIDER', 'duckduckgo').strip().lower()
+    if provider == 'parallel':
+        from parallel_search import parallel_web_search
+        search_tool = parallel_web_search
+    elif provider == 'duckduckgo':
+        search_tool = web_search
+    else:
+        raise ValueError('WEB_SEARCH_PROVIDER must be duckduckgo or parallel')
+
     llm = ChatGroq(
         model='llama-3.1-8b-instant',
         temperature=0,
@@ -17,7 +26,7 @@ def build_agent():
         callbacks=[AgentLogger()]
     )
 
-    tools = [web_search, read_pdf]
+    tools = [search_tool, read_pdf]
     llm_with_tools = llm.bind_tools(tools)
 
     def agent_node(state: MessagesState):
